@@ -1,5 +1,5 @@
 Drivers/CMSIS/system_stm32h7xx.o: \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/system_stm32h7xx.c \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/system_stm32h7xx.c \
  ../../Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h7xx.h \
  ../../Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h743xx.h \
  ../../Drivers/CMSIS/Include/core_cm7.h \

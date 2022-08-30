@@ -1,5 +1,5 @@
 Application/User/USB_DEVICE/Target/usbd_conf.o: \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/USB_DEVICE/Target/usbd_conf.c \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/USB_DEVICE/Target/usbd_conf.c \
  ../../Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h7xx.h \
  ../../Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h743xx.h \
  ../../Drivers/CMSIS/Include/core_cm7.h \

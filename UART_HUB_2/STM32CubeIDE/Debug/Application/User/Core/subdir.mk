@@ -9,17 +9,17 @@ C_SRCS += \
 ../Application/User/Core/bhy2.c \
 ../Application/User/Core/bhy2_hif.c \
 ../Application/User/Core/bhy2_parse.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/dma.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/gpio.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/i2c.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/main.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/spi.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/stm32h7xx_hal_msp.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/stm32h7xx_it.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/dma.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/gpio.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/i2c.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/main.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/spi.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/stm32h7xx_hal_msp.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/stm32h7xx_it.c \
 ../Application/User/Core/syscalls.c \
 ../Application/User/Core/sysmem.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/tim.c \
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/usart.c 
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/tim.c \
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/usart.c 
 
 OBJS += \
 ./Application/User/Core/IMU_funcs.o \
@@ -59,23 +59,23 @@ C_DEPS += \
 # Each subdirectory must supply rules for building sources it contributes
 Application/User/Core/%.o Application/User/Core/%.su: ../Application/User/Core/%.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/dma.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/dma.c Application/User/Core/subdir.mk
+Application/User/Core/dma.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/dma.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/gpio.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/gpio.c Application/User/Core/subdir.mk
+Application/User/Core/gpio.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/gpio.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/i2c.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/i2c.c Application/User/Core/subdir.mk
+Application/User/Core/i2c.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/i2c.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/main.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/main.c Application/User/Core/subdir.mk
+Application/User/Core/main.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/main.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/spi.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/spi.c Application/User/Core/subdir.mk
+Application/User/Core/spi.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/spi.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/stm32h7xx_hal_msp.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/stm32h7xx_hal_msp.c Application/User/Core/subdir.mk
+Application/User/Core/stm32h7xx_hal_msp.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/stm32h7xx_hal_msp.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/stm32h7xx_it.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/stm32h7xx_it.c Application/User/Core/subdir.mk
+Application/User/Core/stm32h7xx_it.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/stm32h7xx_it.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/tim.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/tim.c Application/User/Core/subdir.mk
+Application/User/Core/tim.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/tim.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
-Application/User/Core/usart.o: C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/usart.c Application/User/Core/subdir.mk
+Application/User/Core/usart.o: C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/usart.c Application/User/Core/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32H743xx -c -I../../Core/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../../Drivers/CMSIS/Include -I../../USB_DEVICE/App -I../../USB_DEVICE/Target -I../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
 
 clean: clean-Application-2f-User-2f-Core

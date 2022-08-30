@@ -111,16 +111,15 @@ static uint8_t mWorkBuffer[BFY2_WORK_BUFFER_SIZE];
 
 #define BUFFERS_LEN   255//!< Длина всех буферов
 
-#define IMU_REQUEST_KONDO  0xbad
-#define IMU_REQUEST_LENGTH 0xbad
+#define PACKAGE_INFO_BYTES 5
 
 //uint8_t txBuf[1] = {0};
-uint8_t rxBuf[1] = { 0 };//!<Буфер для байта, полученного при прерывании
-uint8_t rxbuf_len = 1;//!<Длина буфера, полученного при прерывании
+uint8_t rxBuf[BUFFERS_LEN] = { 0 };//!<Буфер для байта, полученного при прерывании
+//uint8_t rxbuf_len = 1;//!<Длина буфера, полученного при прерывании
 
 //kondo
-uint8_t rxBufKondo[1] = { 0 };//!<Буфер для одиночного байта от KONDO, полученного при прерывании
-uint8_t rxbuf_len_kondo = 1;//!<Длина ,буфера для одиночного байта от KONDO, полученного при прерывании
+uint8_t rxBufKondo[BUFFERS_LEN] = { 0 };//!<Буфер для одиночного байта от KONDO, полученного при прерывании
+uint8_t rxbuf_len_kondo = BUFFERS_LEN;//!<Длина ,буфера для одиночного байта от KONDO, полученного при прерывании
 
 uint8_t txBufForKondo[BUFFERS_LEN] = { 0 };
 uint8_t txbuf_len_kondo = 1;
@@ -131,6 +130,7 @@ uint8_t MsgCnt = 0; //Счётчик текущего количества ба�
 
 uint8_t MsgBufTX[BUFFERS_LEN] = { 0 };
 uint8_t AnswBufLen = BUFFERS_LEN;
+uint8_t CurrentAnswBufLen = BUFFERS_LEN;
 uint8_t AnswCnt = 0;//Счётчик текущего количества байт в сообщении в принятом сообщении от KONDO
 uint8_t AnswerIsReady = 0;
 
@@ -149,7 +149,13 @@ uint8_t dmaTxCompleted_uart3 = 1;//!<Флаг окончания передач�
 
 uint8_t IMU_head_tim = 1;
 
-uint8_t kondo_is_IMU = 0;
+enum RPI_READ_STATE
+{
+	PACKAGE_INFO,
+	PACKAGE_CONTENT
+};
+
+enum RPI_READ_STATE rpi_msg_state = PACKAGE_INFO;
 
 struct config
 {
@@ -246,36 +252,56 @@ static void parse_quaternion(const struct bhy2_fifo_parse_data_info *callback_in
 
 //-------------------------------------------------------------------------------------------
 
+enum MSG_TYPE
+{
+	KONDO_SERVO_CMD,
+	KONDO_IMU_STATE,
+	KONDO_SERVO_STATE,
+	IMU_STATE,
+	NONE = 0
+};
+
 struct Message
 {
 	const uint8_t* buffer;
-	const uint8_t  size;
+	const enum MSG_TYPE type;
+	const size_t  tx_size;
+	const size_t  rx_size;
+	const uint8_t  destroyable;
 };
 
-
-
 // Creates copy of message
-struct Message copy_construct(const struct Message* src)
+struct Message copy_construct(const struct Message* src, uint8_t* data_storage)
 {
 	assert(src);
 
-	size_t size = src->size;
-	uint8_t* new_buffer = (uint8_t*)calloc(size, sizeof(uint8_t));
+	uint8_t tx_size = src->tx_size;
+	uint8_t rx_size = src->rx_size;
+	uint8_t destroyable = src->destroyable;
+	enum MSG_TYPE type  = src->type;
 
-	assert(new_buffer);
-	memcpy(new_buffer, src->buffer, size);
+	//uint8_t* new_buffer = NULL;
 
-	struct Message msg = {new_buffer, size};
+	if (src->buffer)
+	{
+		//new_buffer = (uint8_t*)calloc(tx_size, sizeof(uint8_t));
+		//assert(new_buffer);
+		memcpy(data_storage, src->buffer, tx_size);
+	}
+
+	struct Message msg = {data_storage, type, tx_size, rx_size, destroyable};
 	return msg;
 }
 
 // Safely destructs message
-void destruct(struct Message* msg)
+void free_msg_content(struct Message* msg)
 {
 	assert(msg);
-	assert(msg->buffer);
-
-	free(msg->buffer);
+	if (msg->buffer && msg->destroyable)
+	{
+		//free(msg->buffer);
+		msg->buffer = NULL;
+	}
 }
 
 // Sends message to huart
@@ -284,32 +310,13 @@ void send(UART_HandleTypeDef *huart, const struct Message* msg, const uint8_t ti
 	assert(msg);
 	assert(msg->buffer);
 
-	HAL_UART_Transmit(huart, msg->buffer, msg->size, timeout);
+	HAL_UART_Transmit(huart, msg->buffer, msg->tx_size, timeout);
 }
 
 //-------------------------------------------------------------------------------------------
 
-/*
-typedef uint8_t FIFO_TYPE;
-
-uint8_t copy_construct(const uint8_t* src)
-{
-	return *src;
-}
-
-void destruct(const uint8_t* msg)
-{
-
-}
-
-void send(UART_HandleTypeDef *huart, const uint8_t* msg, const uint8_t timeout)
-{
-	HAL_UART_Transmit(huart, msg, sizeof(uint8_t), timeout);
-}
-*/
-//-------------------------------------------------------------------------------------------
-
-#define FIFO_SIZE 20
+#define FIFO_SIZE 500
+#define MSG_MAX_DATA_SIZE 256
 typedef struct Message FIFO_TYPE;
 
 struct FIFO
@@ -318,20 +325,46 @@ struct FIFO
 	size_t tail;
 	size_t size;
 	FIFO_TYPE buf[FIFO_SIZE];
+	uint8_t* data_storage;
 };
 
-// Adds the value to FIFO
-void fifo_add(struct FIFO* fifo, FIFO_TYPE value)
+void fifo_init(struct FIFO* fifo)
+{
+	assert(fifo);
+
+	uint8_t* newbuf =(uint8_t*)calloc(FIFO_SIZE, MSG_MAX_DATA_SIZE);
+
+	assert(newbuf);
+
+	fifo->data_storage = newbuf;
+}
+
+void fifo_push_tail(struct FIFO* fifo, const FIFO_TYPE* value)
 {
 	assert(fifo);
 	assert(fifo->size < FIFO_SIZE);
 
-	FIFO_TYPE value_copy = copy_construct(&value);
-
-	memcpy(&(fifo->buf[fifo->tail]), &value_copy, sizeof(FIFO_TYPE));
+	memcpy(&(fifo->buf[fifo->tail]), value, sizeof(FIFO_TYPE));
 	fifo->tail = (fifo->tail + 1) % FIFO_SIZE;
-
 	fifo->size++;
+}
+
+void fifo_push_head(struct FIFO* fifo, const FIFO_TYPE* value)
+{
+	assert(fifo);
+	assert(fifo->size < FIFO_SIZE);
+
+	fifo->head = (FIFO_SIZE + fifo->head - 1) % FIFO_SIZE;
+	memcpy(&(fifo->buf[fifo->head]), value, sizeof(FIFO_TYPE));
+	fifo->size++;
+}
+
+// Copies the value to tail of FIFO
+void fifo_add(struct FIFO* fifo, FIFO_TYPE value)
+{
+	uint8_t* data_storage = fifo->data_storage + MSG_MAX_DATA_SIZE * fifo->tail;
+	FIFO_TYPE value_copy = copy_construct(&value, data_storage);
+	fifo_push_tail(fifo, &value_copy);
 }
 
 // WARNING: don't forget to destruct the value if you use this function instead of fifo_send
@@ -347,16 +380,31 @@ FIFO_TYPE fifo_get(struct FIFO* fifo)
 	fifo->size--;
 	return value;
 }
-
-// Gets the value from FIFO, sends it to huart and destructs it
-void fifo_send(struct FIFO* fifo, UART_HandleTypeDef *huart, const uint8_t timeout)
+/*
+// Gets the value from FIFO, sends it to huart and frees its content
+uint8_t fifo_send(struct FIFO* fifo, UART_HandleTypeDef *huart, const uint8_t timeout)
 {
 	FIFO_TYPE msg = fifo_get(fifo);
+	CurrentAnswBufLen = msg.rx_size;
+	HAL_UART_Receive_IT(&huart8, rxBufKondo, CurrentAnswBufLen);
 	send(huart, &msg, timeout);
-	destruct(&msg);
+	free_msg_content(&msg);
+	return msg.rx_size;
 }
+*/
+//-------------------------------------------------------------------------------------------
 
-struct FIFO kondo_fifo = {0};
+struct FIFO kondo_fifo;
+
+#define KONDO_IMU_REQUEST_LENGTH  10
+#define KONDO_IMU_RESPONCE_LENGTH 5
+
+const uint8_t KONDO_IMU3_REQUEST_BYTES[] = {0xa, 0x0, 0x20, 0x0, 0x0, 0x0, 0x28, 0x0, 0x2, 0x54};
+const uint8_t KONDO_IMU4_REQUEST_BYTES[] = {0xa, 0x0, 0x20, 0x0, 0x0, 0x0, 0x2a, 0x0, 0x2, 0x56};
+
+struct Message KONDO_IMU3_REQUEST_MSG = {KONDO_IMU3_REQUEST_BYTES, KONDO_IMU_STATE, KONDO_IMU_REQUEST_LENGTH, KONDO_IMU_RESPONCE_LENGTH, 0};
+struct Message KONDO_IMU4_REQUEST_MSG = {KONDO_IMU4_REQUEST_BYTES, KONDO_IMU_STATE, KONDO_IMU_REQUEST_LENGTH, KONDO_IMU_RESPONCE_LENGTH, 0};
+
 
 //-------------------------------------------------------------------------------------------
 /*
@@ -388,6 +436,54 @@ void clear_buf(uint8_t *buff, uint8_t buffNumber)
 		buff[j] = 0;
 	j = 0;
 }
+
+
+struct PackageInfo
+{
+	uint8_t ready;
+	uint8_t periph_addr;
+	uint8_t msg_length;
+	uint8_t ans_length;
+};
+
+struct PackageInfo current_package = {0};
+
+void kondo_fucking_send_and_fucking_register_responce(struct Message msg)
+{
+	CurrentAnswBufLen = msg.rx_size;
+	HAL_UART_Receive_IT(&huart8, rxBufKondo, CurrentAnswBufLen);
+	send(&huart8, &msg, 10);
+	free_msg_content(&msg);
+}
+
+enum KONDO_TICK_SWITCH
+{
+	FIFO_FLUSH = 0,
+	IMU3_REQUEST = 1,
+	IMU4_REQUEST = 2,
+	IMU_HEAD = 3
+};
+
+struct KONDO_SEND_STATE
+{
+	enum KONDO_TICK_SWITCH type;
+	uint8_t transmit_ready;
+	uint8_t package_ready;
+
+	uint8_t buffer[BUFFERS_LEN * 2];
+	uint8_t index_free;
+};
+
+struct KONDO_SEND_STATE kondo_send_state = {NONE, 1, 0, 0, 0};
+
+void fucking_send(UART_HandleTypeDef *huart, const uint8_t* buffer, const size_t size)
+{
+	HAL_StatusTypeDef send_state = HAL_UART_Transmit_IT(huart, buffer, size);
+
+	while (send_state != HAL_OK)
+		send_state = HAL_UART_Transmit_IT(huart, buffer, size);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -406,7 +502,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  fifo_init(&kondo_fifo);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -432,107 +528,54 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_UART_Receive_IT(&huart3, rxBuf, rxbuf_len);
-  HAL_UART_Receive_IT(&huart8, rxBufKondo, rxbuf_len_kondo);
+
+  HAL_UART_Receive_IT(&huart3, rxBuf, PACKAGE_INFO_BYTES);
+
   HAL_UART_Receive_IT(&huart4, rxBufRST, rstbuf_len);
 
   HAL_TIM_Base_Start_IT(&htim3);
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_Base_Start_IT(&htim4);
 
+  // IMU SETUP --------------------------------------------------------------------------------
   struct config conf;
   struct Quaternion mQuaternion; //!< Текущий кватернион
   static uint8_t product_id = 0;
   struct bhy2_dev bhy2;
   static uint16_t bhy2KernelVersion;
 
-  //i2c_init(&BHY2_I2C, BHY2_ADDR);
   spi_init(&BHY2_SPI);
 
-  //uint8_t sensor_error=0;
-  //mError = bhy2_init( BHY2_I2C_INTERFACE, &bhy2_i2c_read, &bhy2_i2c_write, bhy2_delay_us, 64, NULL, &bhy2 );
-  mError = bhy2_init( BHY2_SPI_INTERFACE, &bhy2_spi_read, &bhy2_spi_write, bhy2_delay_us, 64, NULL, &bhy2 );
-  if( mError ) return 1;
-  //GPIOA->BSRR = (uint32_t)SPI_CS_Pin << (16U);
-  mError = bhy2_soft_reset(&bhy2);
-  if( mError ) return 2;
-  //HAL_GPIO_WritePin(SPI_CS_GPIO_Port, SPI_CS_Pin, GPIO_PIN_SET);
-  //
-  //uint8_t ChipControl = 1;
-
-
-  //bhy2_set_regs(0x05, const uint8_t *reg_data, uint16_t length, struct bhy2_dev *dev);
-
-
-  mError = bhy2_get_product_id(&product_id, &bhy2);
-  if( mError ) return 3;
-
-  if( product_id != BHY2_PRODUCT_ID )
-      return 0;
-  /* Check the interrupt pin and FIFO configurations. Disable status and debug */
-  uint8_t hintr_ctrl = BHY2_ICTL_DISABLE_STATUS_FIFO | BHY2_ICTL_DISABLE_DEBUG;// | BHY2_ICTL_EDGE | BHY2_ICTL_ACTIVE_LOW;
-
-  mError = bhy2_set_host_interrupt_ctrl(hintr_ctrl, &bhy2);
-  if( mError ) return 4;
-  //bhy2_get_regs(BHY2_REG_HOST_INTERRUPT_CTRL, &ChipControl, 1, &bhy2);
-  mError = bhy2_get_host_interrupt_ctrl(&hintr_ctrl, &bhy2);
-  if( mError ) return 5;
-
+  mError = bhy2_init( BHY2_SPI_INTERFACE, &bhy2_spi_read, &bhy2_spi_write, bhy2_delay_us, 64, NULL, &bhy2 ); if( mError ) return 1;
+  mError = bhy2_soft_reset(&bhy2); if( mError ) return 2;
+  mError = bhy2_get_product_id(&product_id, &bhy2); if( mError ) return 3;
+  if( product_id != BHY2_PRODUCT_ID ) return 0;
+  uint8_t hintr_ctrl = BHY2_ICTL_DISABLE_STATUS_FIFO | BHY2_ICTL_DISABLE_DEBUG;
+  mError = bhy2_set_host_interrupt_ctrl(hintr_ctrl, &bhy2); if( mError ) return 4;
+  mError = bhy2_get_host_interrupt_ctrl(&hintr_ctrl, &bhy2); if( mError ) return 5;
   uint8_t hif_ctrl = 0;
-  mError = bhy2_set_host_intf_ctrl(hif_ctrl, &bhy2);
-  if( mError ) return 6;
-
-  /* Check if the sensor is ready to load firmware */
+  mError = bhy2_set_host_intf_ctrl(hif_ctrl, &bhy2); if( mError ) return 6;
   uint8_t boot_status;
-  mError = bhy2_get_boot_status(&boot_status, &bhy2);
-  if( mError ) return 7;
-
-  //Проверим готовность микросхемы к загрузке firmware
-  if( !(boot_status & BHY2_BST_HOST_INTERFACE_READY) )
-  return 8;
-
+  mError = bhy2_get_boot_status(&boot_status, &bhy2); if( mError ) return 7;
+  if( !(boot_status & BHY2_BST_HOST_INTERFACE_READY) ) return 8;
   uint8_t sensor_error;
   if( boot_status & BHY2_BST_HOST_INTERFACE_READY )
   {
-  mError = bhy2_upload_firmware_to_ram(bhy2_firmware_image, sizeof(bhy2_firmware_image), &bhy2);
-
+	  mError = bhy2_upload_firmware_to_ram(bhy2_firmware_image, sizeof(bhy2_firmware_image), &bhy2);
   }
   if( mError ) return 9;
-
-  mError = bhy2_get_error_value(&sensor_error, &bhy2);
-  if( mError || sensor_error )
-    return 10;
-
-  //Стартуем программу, загруженную в ram
-  mError = bhy2_boot_from_ram(&bhy2);
-  if( mError ) return 11;
-
-  mError = bhy2_get_error_value(&sensor_error, &bhy2);
-  if( mError || sensor_error )
-    return 12;
-
-  mError = bhy2_get_kernel_version(&bhy2KernelVersion, &bhy2);
-  if( mError || bhy2KernelVersion == 0 ) return 13;
-
-  //rslt = bhy2_register_fifo_parse_callback(BHY2_SYS_ID_META_EVENT, parse_meta_event, NULL, &bhy2);
-  //  print_api_error(rslt, &bhy2);
-  //  rslt = bhy2_register_fifo_parse_callback(BHY2_SYS_ID_META_EVENT_WU, parse_meta_event, NULL, &bhy2);
-  //  print_api_error(rslt, &bhy2);
-
-  mError = bhy2_register_fifo_parse_callback(QUAT_SENSOR_ID, parse_quaternion, &mQuaternion, &bhy2);
-  if( mError ) return 14;
-
-  mError = bhy2_get_and_process_fifo( mWorkBuffer, BFY2_WORK_BUFFER_SIZE, &bhy2);
-  if( mError ) return 15;
-
-   /*Update the callback table to enable parsing of sensor data*/
-  mError = bhy2_update_virtual_sensor_list(&bhy2);
-  if( mError ) return 16;
+  mError = bhy2_get_error_value(&sensor_error, &bhy2); if( mError || sensor_error ) return 10;
+  mError = bhy2_boot_from_ram(&bhy2); if( mError ) return 11;
+  mError = bhy2_get_error_value(&sensor_error, &bhy2); if( mError || sensor_error ) return 12;
+  mError = bhy2_get_kernel_version(&bhy2KernelVersion, &bhy2); if( mError || bhy2KernelVersion == 0 ) return 13;
+  mError = bhy2_register_fifo_parse_callback(QUAT_SENSOR_ID, parse_quaternion, &mQuaternion, &bhy2); if( mError ) return 14;
+  mError = bhy2_get_and_process_fifo( mWorkBuffer, BFY2_WORK_BUFFER_SIZE, &bhy2); if( mError ) return 15;
+  mError = bhy2_update_virtual_sensor_list(&bhy2); if( mError ) return 16;
 
   float sample_rate = 800.0; /* Read out data measured at 100Hz */
   uint32_t report_latency_ms = 0; /* Report immediately */
-  mError = bhy2_set_virt_sensor_cfg(QUAT_SENSOR_ID, sample_rate, report_latency_ms, &bhy2);
-  if( mError ) return 17;
+  mError = bhy2_set_virt_sensor_cfg(QUAT_SENSOR_ID, sample_rate, report_latency_ms, &bhy2); if( mError ) return 17;
+  //-------------------------------------------------------------------------------------------
 
   /* USER CODE END 2 */
 
@@ -541,7 +584,8 @@ int main(void)
 
   while (1)
   {
-	  if (TransmitIsReady == 0 && IMU_head_tim)
+
+	  if (IMU_head_tim)
 	  {
 		  uint8_t interruptStatus = 0;
 		  bhy2_get_interrupt_status( &interruptStatus, &bhy2 );
@@ -550,114 +594,57 @@ int main(void)
 			  bhy2_get_and_process_fifo( mWorkBuffer, BFY2_WORK_BUFFER_SIZE, &bhy2 );
 			  IMU_head_tim = 0;
 		  }
-
-		  //HAL_UART_Transmit(&huart3, qt_component_buffer, QUATERNION_BYTE_LENGHT, 10);
 	  }
 
+	#define NEXT_DATA(label) kondo_send_state.type = (label); kondo_send_state.transmit_ready = 0;
 
-      if (AnswerIsReady)
-      	{
-      	 //__disable_irq();
-      	 HAL_UART_Transmit(&huart3, txBufForKondo, AnswBufLen, 10);
+	if (kondo_send_state.package_ready && kondo_send_state.transmit_ready)
+	{
+		switch(kondo_send_state.type)
+		{
+			case FIFO_FLUSH:
+			{
+				NEXT_DATA(IMU3_REQUEST);
+				kondo_send_state.transmit_ready = 0;
 
-      	 /*if (dmaTxCompleted_uart3)
-		    {
-		   	  HAL_UART_Transmit_DMA(&huart3, txBufForKondo, AnswBufLen);
-		   	  dmaTxCompleted_uart3 = 0;
-		    }
-         */
-         AnswerIsReady = 0;
-      	 clear_buf(txBufForKondo, AnswBufLen);
-      	 //__enable_irq();
-      	}
+				FIFO_TYPE msg = fifo_get(&kondo_fifo);
+				kondo_fucking_send_and_fucking_register_responce(msg);
+			} break;
+			case IMU3_REQUEST:
+			{
+				NEXT_DATA(IMU4_REQUEST);
 
-      	  	if (TransmitIsReady)
-      		{
-      			memcpy(MsgBufTX, MsgBufRX, sizeof(MsgBufRX));
-      			clear_msg_buf();
-      			MsgCnt = 0;
-      			rxBuf[0] = 0;
+				kondo_fucking_send_and_fucking_register_responce(KONDO_IMU3_REQUEST_MSG);
+			} break;
 
-      			//__disable_irq();
-      			switch(Periph_Addr)
-      			{
-      				case UART2_ADDR:
-      					if (dmaTxCompleted_uart2)
-    				     {
-    				    	 HAL_UART_Transmit_DMA(&huart2, &MsgBufTX[Msg_nByte], MsgBufLen);
-    				    	  dmaTxCompleted_uart2 = 0;
-    				     }
-      				break;
+			case IMU4_REQUEST:
+			{
+				NEXT_DATA(IMU_HEAD);
 
-      				case UART4_ADDR:
-      					HAL_UART_Transmit(&huart4, &MsgBufTX[Msg_nByte], MsgBufLen, 5);
-      				break;
+				kondo_fucking_send_and_fucking_register_responce(KONDO_IMU4_REQUEST_MSG);
+			} break;
 
-      				case UART7_ADDR:
-      					HAL_UART_Transmit(&huart7, &MsgBufTX[Msg_nByte], MsgBufLen, 5);
-      				break;
+			case IMU_HEAD:
+			{
+				//HAL_Delay(5);
 
-      				case UART8_ADDR:
-      				{
-      					//for (i = Msg_nByte; i < (Msg_nByte + MsgBufLen); i++)
-      					//{
-      					//	HAL_UART_Transmit(&huart8, &MsgBufTX[i], 1, 5);
-      					//}
-      					//HAL_UART_Transmit(&huart8, &MsgBufTX[Msg_nByte], MsgBufLen, 5);
-      					struct Message kondo_msg = {&MsgBufTX[Msg_nByte], MsgBufLen};
-      					fifo_add(&kondo_fifo, kondo_msg);
+				//fucking_send(&huart3, qt_component_buffer, QUATERNION_BYTE_LENGHT);
 
-      				}
-      				break;
+				memcpy(kondo_send_state.buffer + kondo_send_state.index_free, qt_component_buffer, QUATERNION_BYTE_LENGHT);
+				kondo_send_state.index_free += QUATERNION_BYTE_LENGHT;
 
-      				case I2C2_ADDR:
-      				{
-      					HAL_I2C_Master_Transmit(&hi2c2, (MsgBufTX[Msg_nByte] << 1), &MsgBufTX[Msg_nByte+1], 1,  I2C_TIMEOUT);
-      					HAL_I2C_Master_Receive(&hi2c2, (MsgBufTX[Msg_nByte] << 1), &regData, 1,  I2C_TIMEOUT);
-      					if (regData > 0)
-      						{
-      							//HAL_UART_Transmit(&huart3, &regData, 1, 10);
+				__disable_irq();
+				fucking_send(&huart3, kondo_send_state.buffer, kondo_send_state.index_free);
+				__enable_irq();
 
-      						HAL_UART_Transmit_DMA(&huart3, &regData, 1);
-      							regData = 0;
-      						}
-      				}
-      				break;
+				kondo_send_state.index_free = 0;
+				kondo_send_state.type  = NONE;
+				kondo_send_state.transmit_ready = 1;
+				kondo_send_state.package_ready = 0;
+			} break;
 
-      				case SYNC_ADDR:
-      					if (MsgBufTX[Msg_nByte] == 1)
-      					{
-      						HAL_GPIO_WritePin(CAM_SYNC_GPIO_Port, CAM_SYNC_Pin, GPIO_PIN_SET);
-      					}
-      					else
-      						HAL_GPIO_WritePin(CAM_SYNC_GPIO_Port, CAM_SYNC_Pin, GPIO_PIN_RESET);
-      				break;
-
-      				case IMU_CS_ADDR:
-      					if (MsgBufTX[Msg_nByte] == 1)
-      					{
-      						HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
-      					}
-      					else
-      						HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET);
-      				break;
-
-      				case QUATERNION_ADDR:
-      					{
-      				      if (dmaTxCompleted_uart3)
-      				      {
-
-      				    	//uint8_t qt_component_buffer[16] = {0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0xAA,0xBB,0xCC,0xDD,0xEE,0xFF,0x0A};
-      						//HAL_UART_Transmit(&huart3, qt_component_buffer, QUATERNION_BYTE_LENGHT, 10);
-      						HAL_UART_Transmit_DMA(&huart3, qt_component_buffer, QUATERNION_BYTE_LENGHT);
-      				    	dmaTxCompleted_uart3 = 0;
-      				      }
-      					}
-      				break;
-      			}
-      			TransmitIsReady = 0;
-      			//__enable_irq();au
-      		}
+		}
+	}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -734,103 +721,69 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 		dmaTxCompleted_uart3 = 1;
 }
 
-
-
-uint8_t flag = 0;
-uint8_t SOM1isCirrect = 0;
-uint8_t SOM2isCirrect = 0;
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if (huart->Instance == USART3)
 	{
-		MsgBufRX[MsgCnt] = rxBuf[0];
-		if (MsgBufRX[SOM1_nByte] == SOM1){
-			if (MsgCnt == 0){
-			SOM1isCirrect = 1;
-			}
-		} else {
-			clear_msg_buf();
-			MsgCnt = 0;
-			rxBuf[0] = 0;
-			SOM1isCirrect = 0;
-			SOM2isCirrect = 0;
-			flag = 0;
-		}
+		switch(rpi_msg_state)
+		{
+			case PACKAGE_INFO:
+			{
 
-		if (SOM1isCirrect)
-			{
-			if (MsgCnt == SOM2_nByte)
+				uint8_t rx_SOM1 	   = rxBuf[0];
+				uint8_t rx_SOM2 	   = rxBuf[1];
+				uint8_t rx_msg_length  = rxBuf[2];
+				uint8_t rx_ans_length  = rxBuf[3];
+				uint8_t rx_periph_addr = rxBuf[4];
+
+				if (rx_SOM1 != SOM1 || rx_SOM2 != SOM2)
 				{
-				if (MsgBufRX[SOM2_nByte] == SOM2)
-					{
-					SOM2isCirrect = 1;
-					} else SOM2isCirrect = 0;
-				if (!SOM1isCirrect || !SOM2isCirrect)
-					{
-							clear_msg_buf();
-							MsgCnt = 0;
-							rxBuf[0] = 0;
-							SOM1isCirrect = 0;
-							SOM2isCirrect = 0;
-							flag = 0;
-					}
+					HAL_UART_Receive_IT(&huart3, rxBuf, PACKAGE_INFO_BYTES);
+					return;
 				}
-			}
-		if (MsgCnt == MsgLen_nByte)
+
+				current_package.periph_addr = rx_periph_addr;
+				current_package.msg_length  = rx_msg_length;
+				current_package.ans_length  = rx_ans_length;
+
+				rpi_msg_state = PACKAGE_CONTENT;
+				HAL_UART_Receive_IT(&huart3, rxBuf, rx_msg_length);
+
+			} break;
+			case PACKAGE_CONTENT:
 			{
-				if (MsgBufRX[MsgLen_nByte] < 255)
-				MsgBufLen = MsgBufRX[MsgLen_nByte];
-			}
-		if (MsgCnt == AnswLen_nByte)
-			{
-				AnswBufLen = MsgBufRX[AnswLen_nByte];
-			}
-		if (SOM1isCirrect)
-			{
-				MsgCnt++;
-			}
-		if (MsgCnt == (MsgBufLen + 5) && (SOM1isCirrect && SOM2isCirrect))
-			{
-				TransmitIsReady = 1;
-				Periph_Addr = MsgBufRX[Addr_nByte];
-				//if (Periph_Addr == 0xFF) __NVIC_SystemReset();
-			}
-		HAL_UART_Receive_IT(&huart3, rxBuf, rxbuf_len);
+				struct Message msg = {rxBuf, KONDO_SERVO_CMD, current_package.msg_length, current_package.ans_length, 1};
+				fifo_add(&kondo_fifo, msg);
+
+				rpi_msg_state = PACKAGE_INFO;
+				HAL_UART_Receive_IT(&huart3, rxBuf, PACKAGE_INFO_BYTES);
+			} break;
+
+			default: HAL_UART_Receive_IT(&huart3, rxBuf, PACKAGE_INFO_BYTES);
+		}
 	}
+
 
 	if (huart->Instance == UART8)
 	{
-		txBufForKondo[AnswCnt] = rxBufKondo[0];
-		AnswCnt++;
-		if (AnswCnt == AnswBufLen)
-		{
-		 AnswerIsReady = 1;
-		 AnswCnt = 0;
-		}
-		if (AnswCnt > AnswBufLen)
-			AnswCnt = 0;
-		HAL_UART_Receive_IT(&huart8, rxBufKondo, rxbuf_len_kondo);
+		memcpy(kondo_send_state.buffer + kondo_send_state.index_free, rxBufKondo, CurrentAnswBufLen);
+		kondo_send_state.index_free += CurrentAnswBufLen;
+		kondo_send_state.transmit_ready = 1;
 	}
 
-	if (huart->Instance == UART4)
-	{
-		if ((rxBufRST[0] == 0xF0) & (rxBufRST[1] == 0xAA) & (rxBufRST[2] == 0x0F))
-		{
-			__NVIC_SystemReset();
-		}
-		HAL_UART_Receive_IT(&huart4, rxBufRST, rstbuf_len);
-	}
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+
   if (htim->Instance == TIM3)
   {
     if (kondo_fifo.size > 0)
     {
-      fifo_send(&kondo_fifo, &huart8, 5);
+    	kondo_send_state.type = FIFO_FLUSH;
+    	kondo_send_state.package_ready = 1;
     }
+
   }
   if (htim->Instance == TIM2)
 	  IMU_head_tim = 1;

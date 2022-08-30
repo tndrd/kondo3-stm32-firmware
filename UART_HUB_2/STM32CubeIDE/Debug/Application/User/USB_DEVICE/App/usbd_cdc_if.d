@@ -1,6 +1,6 @@
 Application/User/USB_DEVICE/App/usbd_cdc_if.o: \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/USB_DEVICE/App/usbd_cdc_if.c \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/USB_DEVICE/App/usbd_cdc_if.h \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/USB_DEVICE/App/usbd_cdc_if.c \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/USB_DEVICE/App/usbd_cdc_if.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
@@ -45,7 +45,7 @@ Application/User/USB_DEVICE/App/usbd_cdc_if.o: \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h
-C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/USB_DEVICE/App/usbd_cdc_if.h:
+C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/USB_DEVICE/App/usbd_cdc_if.h:
 ../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:
 ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
 ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h:

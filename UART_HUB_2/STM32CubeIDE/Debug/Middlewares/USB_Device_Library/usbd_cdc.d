@@ -1,5 +1,5 @@
 Middlewares/USB_Device_Library/usbd_cdc.o: \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
  ../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \

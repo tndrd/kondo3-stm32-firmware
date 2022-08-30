@@ -1,5 +1,5 @@
 Middlewares/USB_Device_Library/usbd_core.o: \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../../USB_DEVICE/Target/usbd_conf.h ../../Core/Inc/main.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h \

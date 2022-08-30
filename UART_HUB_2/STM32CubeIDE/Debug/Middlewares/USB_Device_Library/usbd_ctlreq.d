@@ -1,5 +1,5 @@
 Middlewares/USB_Device_Library/usbd_ctlreq.o: \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
  ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
  ../../USB_DEVICE/Target/usbd_conf.h ../../Core/Inc/main.h \

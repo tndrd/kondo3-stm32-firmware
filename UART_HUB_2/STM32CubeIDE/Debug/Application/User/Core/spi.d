@@ -1,5 +1,5 @@
 Application/User/Core/spi.o: \
- C:/Users/HiTF/Desktop/UART_HUB_2/Backup/UART_HUB_2/Core/Src/spi.c \
+ C:/Users/HiTF/Desktop/UART_HUB_2/UART_HUB_2/Core/Src/spi.c \
  ../../Core/Inc/spi.h ../../Core/Inc/main.h \
  ../../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h \
  ../../Core/Inc/stm32h7xx_hal_conf.h \
