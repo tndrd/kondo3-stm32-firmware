@@ -1,0 +1,13 @@
+../Application/User/Core/IMU_funcs.c:45:6:usbPrintf	16	static
+../Application/User/Core/IMU_funcs.c:58:6:spi_init	16	static
+../Application/User/Core/IMU_funcs.c:69:8:spiTransmit	16	static
+../Application/User/Core/IMU_funcs.c:85:8:spiReceiv	16	static
+../Application/User/Core/IMU_funcs.c:104:8:bhy2_spi_read	24	static
+../Application/User/Core/IMU_funcs.c:142:8:bhy2_spi_write	24	static
+../Application/User/Core/IMU_funcs.c:177:6:i2c_init	16	static
+../Application/User/Core/IMU_funcs.c:183:9:summir	16	static
+../Application/User/Core/IMU_funcs.c:195:8:i2cTransmit	16	static
+../Application/User/Core/IMU_funcs.c:212:8:i2cReceiv	16	static
+../Application/User/Core/IMU_funcs.c:233:8:bhy2_i2c_read	24	static
+../Application/User/Core/IMU_funcs.c:257:8:bhy2_i2c_write	24	static
+../Application/User/Core/IMU_funcs.c:283:6:bhy2_delay_us	16	static,ignoring_inline_asm
