@@ -68,7 +68,7 @@ class Quaternion:
 class Kondo3Rcb4BaseLib(Rcb4BaseLib):
     def __init__(self):
         super().__init__()
-        self._init_STM32()
+        #self._init_STM32()
         self._rx_income = Queue(maxsize=500)
         self._tx_queue  = Queue(maxsize=500)
         self._rx_active = 1
@@ -198,7 +198,7 @@ class Kondo3Rcb4BaseLib(Rcb4BaseLib):
 if __name__ == "__main__":
     
     kondo = Kondo3Rcb4BaseLib()
-    kondo.open('/dev/ttyAMA2', 1250000, 10)
+    kondo.open('/dev/ttyAMA3', 1250000, 10)
     
     sd = kondo.ServoData()
     sd.id   = 9
